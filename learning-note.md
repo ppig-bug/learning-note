@@ -1,87 +1,106 @@
 # 强化学习的数学原理
-    入门了解：强化学习的最终目的就是要求解最优策略
-### 基本概念
-辅助理解的一个模型：grid-world example,如下：
+
+> 入门了解:强化学习的最终目的就是要求解最优策略。
+
+## 基本概念
+
+辅助理解的一个模型:grid-world example(网格世界示例),如下:
+
 | s1 | s2 | s3 |
 |----|----|----|
 | s4 | s5 | **<span style="background-color:#ffbc00">s6</span>** |
 | **<span style="background-color:#ffbc00">s7</span>** | s8 | **<span style="background-color:#40e0f0">s9</span>** |
 
-1.State:agent相对于环境的状态，在grid就是location，即s1,s2等
+> 图例:黄色 = Forbidden area(禁止区域),蓝色 = 目标区域
 
-2.state space:本质就是一个集合 S={si}
+### 1. State(状态)
 
-3.Action:每个状态对应5个可能的动作。
-a1向上 a2向右 a3向下 a4向左 a5不动
+agent 相对于环境的状态,在 grid 中就是 location,即 s1、s2 等。
 
-4.Action Space of a state:同理也是一个集合
+### 2. State Space(状态空间)
 
-5.State transition ：实际上是定义agent和环境的交互行为
-举例：s1通过a2到s2,s1通过a1到s1
+本质就是一个集合:$S = \{s_i\}$。
 
-6.Forbidden area:(黄色)
-situation1：accessible but with penalty
-situation2: inaccessible
+### 3. Action(动作)
 
-7.State transition probability:
-用条件概率描述state transition:
-<span style="color:red;">
-**p(s2|s1,a2)=1**
-**p(si|s1,a2)=0 任意i!=2**
-</span>
+每个状态对应 5 个可能的动作:
 
-8.Policy:在某个状态采取怎样的action
+- $a_1$:向上
+- $a_2$:向右
+- $a_3$:向下
+- $a_4$:向左
+- $a_5$:不动
 
-9.Mathematical representation:(强化学习中Π统一指的是策略)（确定性）
+### 4. Action Space of a State(状态的动作空间)
 
-Π（a1|s1）=0
+同理,也是一个集合。
 
-Π（a2|s1）=1
+### 5. State Transition(状态转移)
 
-Π（a3|s1）=0
+实际上定义了 agent 和环境的交互行为。举例:$s_1$ 通过 $a_2$ 到达 $s_2$;$s_1$ 通过 $a_1$ 仍在 $s_1$(原地不动)。
 
-Π（a4|s1）=0
+### 6. Forbidden Area(禁止区域,黄色)
 
-Π（a5|s1）=0
+- situation 1:accessible but with penalty(可进入但有惩罚)
+- situation 2:inaccessible(不可进入)
 
-10.stochastic policies:(不确定性)：
+### 7. State Transition Probability(状态转移概率)
 
-Π（a1|s1）=0
+用条件概率描述 state transition:
 
-Π（a2|s1）=0.5
+$$p(s_2|s_1,a_2)=1,\qquad p(s_i|s_1,a_2)=0 \quad (i \neq 2)$$
 
-Π（a3|s1）=0.5
+### 8. Policy(策略)
 
-Π（a4|s1）=0
+在某个状态下采取怎样的 action。
 
-Π（a5|s1）=0
+### 9. Mathematical Representation(数学表示,确定性策略)
 
-11.reward：一个标量，在agent采取动作后得到一个数。正数即鼓励，负数即惩罚，为0可以相当于鼓励
-<span style="color:red;">
-**p(r=-1|s1,a1)=1 and p(r!=-1|s1,a1)=0**
-</span>
+> 注:强化学习中 $\pi$ 统一指的是策略。
 
-12.trajectory:state-action-reward chain
+$$\pi(a_1|s_1)=0,\quad \pi(a_2|s_1)=1,\quad \pi(a_3|s_1)=0,\quad \pi(a_4|s_1)=0,\quad \pi(a_5|s_1)=0$$
 
-13.return:trajectory所有的reward相加
+### 10. Stochastic Policies(随机策略,不确定性)
 
-14.Discounted return  :为解决return无限加数得到无穷值的情况，引入discount rate γ，0<=γ<=1
+$$\pi(a_1|s_1)=0,\quad \pi(a_2|s_1)=0.5,\quad \pi(a_3|s_1)=0.5,\quad \pi(a_4|s_1)=0,\quad \pi(a_5|s_1)=0$$
 
-    discounted return=0+γ0+γ<sup>2</sup>0+...=γ<sup>3</sup>(1/(1-γ))
-γ趋向于0，return越依赖于前面
-γ趋向于1，return越依赖后面
+### 11. Reward(奖励)
 
-15.Episode:一个有限步的trajectory
+一个标量,在 agent 采取动作后得到一个数。正数即鼓励,负数即惩罚,为 0 相当于无奖励。
 
-### Markov decision process(MDP)
+$$p(r=-1|s_1,a_1)=1,\qquad p(r \neq -1|s_1,a_1)=0$$
 
-1.key elements of MDP:
+### 12. Trajectory(轨迹)
 
-    sets:state,action,reward
-    Probability distribution:state transition probability,reward probability
-    Policy:Π（a|s)
+state-action-reward 链。
 
-2.Markov property:
-    
-    p(St+1|=a t+1,St,...a1,s0)=p(St+1|=a t+1,St)
-    p(r t+1|=a t+1,St,...a1,s0)=p(r t+1|=a t+1,St)
+### 13. Return(回报)
+
+trajectory 中所有 reward 相加。
+
+### 14. Discounted Return(折扣回报)
+
+为解决 return 无限累加得到无穷值的问题,引入折扣率 $\gamma$,其中 $0 \le \gamma \le 1$:
+
+$$G_t = r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \cdots = \sum_{k=0}^{\infty} \gamma^k r_{t+k+1}$$
+
+- $\gamma \to 0$:return 越依赖于前面的奖励
+- $\gamma \to 1$:return 越依赖后面的奖励
+
+### 15. Episode(回合/片段)
+
+一个有限步的 trajectory。
+
+## Markov Decision Process(MDP,马尔可夫决策过程)
+
+### 1. Key Elements of MDP(MDP 的关键要素)
+
+- sets:state、action、reward
+- Probability distribution:state transition probability、reward probability
+- Policy:$\pi(a|s)$
+
+### 2. Markov Property(马尔可夫性质)
+
+$$p(s_{t+1}|a_{t+1},s_t,\ldots,a_1,s_0)=p(s_{t+1}|a_{t+1},s_t)$$
+
+$$p(r_{t+1}|a_{t+1},s_t,\ldots,a_1,s_0)=p(r_{t+1}|a_{t+1},s_t)$$
