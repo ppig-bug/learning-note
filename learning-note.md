@@ -104,3 +104,23 @@ $$G_t = r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \cdots = \sum_{k=0}^{\inft
 $$p(s_{t+1}|a_{t+1},s_t,\ldots,a_1,s_0)=p(s_{t+1}|a_{t+1},s_t)$$
 
 $$p(r_{t+1}|a_{t+1},s_t,\ldots,a_1,s_0)=p(r_{t+1}|a_{t+1},s_t)$$
+
+## 贝尔曼公式
+vi denote the return obtained starting from si(i=1,2,3,4)
+- v1=r1+γr2+γ<sup>2</sup>r3+...
+- v2=r2+γr3+γ<sup>2</sup>r4+...
+- v3=r3+γr4+γ<sup>2</sup>r1+...
+- v4=r4+γr1+γ<sup>2</sup>r2+...
+
+把γ提出来：v1=r1+γv2 由此可以得到一个结论：一个状态的value依赖于其他状态的value
+> 将公式用矩阵表示出来得到：
+
+    Bellman equation: v=r+γPv
+
+### State value
+本质上就是
+> $$G_t的一个期望值或者平均值
+
+> $$v_Π(s)=E[Gt|St=s]
+
+区别：Return是针对单个trajectory得到的return；State value 是针对多个trajectory得到的return再求平均值
