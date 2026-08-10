@@ -124,3 +124,67 @@ vi denote the return obtained starting from si(i=1,2,3,4)
 > $$v_Π(s)=E[Gt|St=s]
 
 区别：Return是针对单个trajectory得到的return；State value 是针对多个trajectory得到的return再求平均值
+
+
+### 贝尔曼期望方程（状态价值）完整推导
+
+回报定义：
+$$G_t = R_{t+1}+\gamma R_{t+2}+\gamma^2 R_{t+3}+\dots = R_{t+1}+\gamma G_{t+1}$$
+
+状态价值函数定义：
+$$v_\pi(s) = \mathbb{E}\big[G_t \mid S_t = s\big]$$
+
+代入回报递推关系：
+
+$$
+\begin{aligned}
+v_\pi(s)
+&= \mathbb{E}\big[R_{t+1}+\gamma G_{t+1} \mid S_t = s\big] \\
+&= \mathbb{E}\big[R_{t+1} \mid S_t = s\big]
++\gamma\,\mathbb{E}\big[G_{t+1} \mid S_t = s\big]
+\end{aligned}
+$$
+
+#### ① 展开即时奖励期望
+$$\begin{aligned}
+\mathbb{E}\big[R_{t+1}\mid S_t = s\big]
+&=\sum_{a}\pi(a|s)\; \mathbb{E}\big[R_{t+1}\mid S_t=s,\,A_t=a\big] \\
+&=\sum_{a}\pi(a|s)\left(\sum_{r} p(r\mid s,a)\, r\right)
+\end{aligned}$$
+
+#### ② 展开未来回报期望
+$$
+\begin{aligned}
+\mathbb{E}\big[G_{t+1}\mid S_t = s\big]
+&=\sum_{s'}\mathbb{E}\big[G_{t+1}\mid S_t=s,\;S_{t+1}=s'\big]\, p(s'\mid s) \\
+&=\sum_{s'}\mathbb{E}\big[G_{t+1}\mid S_{t+1}=s'\big]\, p(s'\mid s) \\
+&=\sum_{s'} v_\pi(s')\; p(s'\mid s)
+\end{aligned}
+$$
+
+状态边缘转移概率全概率展开：
+$$p(s'|s)=\sum_{a} p(s'\mid s,a)\,\pi(a|s)$$
+
+$$
+\mathbb{E}\big[G_{t+1}\mid S_t = s\big]
+=\sum_{s'} v_\pi(s') \sum_{a} p(s'\mid s,a)\,\pi(a|s)
+$$
+
+#### 合并得到贝尔曼期望方程
+$$
+\begin{aligned}
+v_\pi(s)
+&=\sum_{a}\pi(a|s)\sum_{r} p(r|s,a)\,r
++\gamma \sum_{a}\pi(a|s)\sum_{s'} p(s'|s,a)\,v_\pi(s') \\
+&=\sum_{a}\pi(a|s)\left[
+\sum_{r} p(r\mid s,a)\,r
++\gamma \sum_{s'} p(s'\mid s,a)\,v_\pi(s')
+\right]
+\end{aligned}
+$$
+
+|符号|含义|
+|---|---|
+|Gt|时刻t开始的总回报|
+|$\gamma$|折扣系数 $0\le\gamma\le1$|
+|$v_\pi(s)$|策略$\pi$下状态$s$的状态价值|
