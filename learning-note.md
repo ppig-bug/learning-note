@@ -202,3 +202,187 @@ $$v(s) = r + \gamma \times v(s')$$
 - **马尔可夫性质不矛盾**:它抹掉的是**过去**,不是未来。未来仍很重要,只是"预测未来只需要当前状态、不需要历史"——所以当前状态才能代表整个未来,value 才有意义。
 
 **一句话:** MDP 定义规则,贝尔曼公式靠"当前状态能代表未来"这个性质,把每个状态的价值算出来。
+
+
+## 贝尔曼期望公式向量表示
+
+### 贝尔曼期望方程：矩阵向量形式与策略评估
+#### 1. 标量形式
+策略 $\pi$ 下状态价值贝尔曼期望方程：
+
+$$v_\pi(s) = \sum_a \pi(a|s)\left[
+\sum_r p(r|s,a)\,r
++\gamma \sum_{s'} p(s'|s,a)\,v_\pi(s')
+\right]$$
+
+定义聚合期望：
+
+$$\begin{align*}
+r_\pi(s) &\triangleq \sum_a \pi(a|s)\sum_r p(r|s,a)\,r \\
+P_\pi(s'|s) &\triangleq \sum_a \pi(a|s)\,p(s'|s,a)
+\end{align*}$$
+- $r_\pi(s)$：状态 $s$ 遵循策略 $\pi$ 的单步奖励期望
+- $P_\pi(s'|s)$：策略诱导的状态转移概率
+
+简化标量方程：
+
+$$v_\pi(s) = r_\pi(s) + \gamma \sum_{s'} P_\pi(s'|s)\,v_\pi(s')$$
+
+#### 2. 矩阵-向量形式
+设一共有 $n$ 个状态 
+
+$\{s_1,s_2,\dots,s_n\}$
+
+价值向量、奖励向量：
+
+$$\boldsymbol{v}_\pi =
+\begin{bmatrix}
+v_\pi(s_1)\\v_\pi(s_2)\\\vdots\\v_\pi(s_n)
+\end{bmatrix},\quad
+\boldsymbol{r}_\pi =
+\begin{bmatrix}
+r_\pi(s_1)\\r_\pi(s_2)\\\vdots\\r_\pi(s_n)
+\end{bmatrix}$$
+
+策略状态转移矩阵 
+$\boldsymbol{P}_\pi\in\mathbb{R}^{n\times n}$
+
+$$\big[\boldsymbol{P}_\pi\big]_{ij}=P_\pi(s_j \mid s_i)$$
+
+紧凑矩阵贝尔曼方程：
+
+$$\boldsymbol{v}_\pi = \boldsymbol{r}_\pi + \gamma \boldsymbol{P}_\pi \boldsymbol{v}_\pi$$
+
+### 闭式解析解
+
+$$
+\begin{aligned}
+\boldsymbol{v}_\pi - \gamma \boldsymbol{P}_\pi \boldsymbol{v}_\pi &= \boldsymbol{r}_\pi \\
+\left(\boldsymbol{I}-\gamma \boldsymbol{P}_\pi\right)\boldsymbol{v}_\pi &= \boldsymbol{r}_\pi \\
+\boldsymbol{v}_\pi &= \left(\boldsymbol{I}-\gamma \boldsymbol{P}_\pi\right)^{-1}\boldsymbol{r}_\pi
+\end{aligned}
+$$
+
+$\boldsymbol{I}$ 为单位矩阵。
+
+#### 3. 迭代策略评估公式
+迭代更新规则：
+
+$$\boldsymbol{v}_{k+1} = \boldsymbol{r}_\pi + \gamma \boldsymbol{P}_\pi \boldsymbol{v}_k$$
+
+收敛性质：
+
+$$k\rightarrow\infty \implies \boldsymbol{v}_k \rightarrow \boldsymbol{v}_\pi$$
+
+停止准则：
+
+$$\max_{s}\left|\boldsymbol{v}_{k+1}(s)-\boldsymbol{v}_k(s)\right| < \theta$$
+
+$\theta$ 为预设收敛阈值。
+
+#### 4. 4状态MDP向量展开示例
+
+$$\begin{bmatrix}
+v_\pi(s_1) \\
+v_\pi(s_2) \\
+v_\pi(s_3) \\
+v_\pi(s_4)
+\end{bmatrix}
+=\begin{bmatrix}
+r_\pi(s_1) \\
+r_\pi(s_2) \\
+r_\pi(s_3) \\
+r_\pi(s_4)
+\end{bmatrix}
++\gamma
+\begin{bmatrix}
+P_\pi(s_1|s_1) & P_\pi(s_2|s_1) & P_\pi(s_3|s_1) & P_\pi(s_4|s_1) \\
+P_\pi(s_1|s_2) & P_\pi(s_2|s_2) & P_\pi(s_3|s_2) & P_\pi(s_4|s_2) \\
+P_\pi(s_1|s_3) & P_\pi(s_2|s_3) & P_\pi(s_3|s_3) & P_\pi(s_4|s_3) \\
+P_\pi(s_1|s_4) & P_\pi(s_2|s_4) & P_\pi(s_3|s_4) & P_\pi(s_4|s_4)
+\end{bmatrix}
+\begin{bmatrix}
+v_\pi(s_1) \\
+v_\pi(s_2) \\
+v_\pi(s_3) \\
+v_\pi(s_4)
+\end{bmatrix}$$
+
+#### 5. Action value(和state value区别就是有了动作action)
+
+$$q_Π(s,a)=E[Gt|St=s,At=a]$$
+
+
+$$E[G_t \mid S_t = s] = \sum_{a} E[G_t \mid S_t = s, A_t = a]\pi(a|s)$$
+
+$$v_\pi(s) = \sum_{a} \pi(a|s)\,q_\pi(s,a)$$
+
+### 疑惑答疑
+
+## 1.为什么要学习贝尔曼公式：
+用大白话讲，贝尔曼公式就是RL世界的标准答案模板，所有的强化学习都是按照这个标准答案不断优化
+
+## 2.为什么既要学习state value还要学习action value 二者到底有什么用
+state value 本质就是对"状态"的评估：站在s这个位置，按照当前策略，平均能拿多少分（未来reward的折扣期望）；Action value本质是对”状态+动作"的一个评估，站在s这个位置，选择a这个动作，平均能拿多少分，以此来找最优策略
+
+## 3.贝尔曼公式在生活中有哪些具体的应用，怎么实现的
+经过我的查阅，最典型的就是手机地图的导航，app每天都在算：从当前位置走哪条路到达终点是最快的。
+
+- 状态=每个路口（节点）
+- 动作=能走哪条路
+- 奖励=走这条路需要花费时间（时间越短越好）
+- 路口价值：从这个路口到终点，最快要多久
+
+
+
+
+## 反向传播(Backpropagation)
+
+### 一句话
+
+> 反向传播 = 用链式法则,从输出端往回一趟"接力",高效算出所有参数的梯度;更新参数由梯度下降完成。
+
+### 反向传播直观例子：单层线性模型
+#### 网络结构
+输入 $x$ → 线性层 $y=wx+b$ → 损失函数 $L=\dfrac12(y-y_{gt})^2$
+
+#### 链式求导（反向传播核心原理）
+由链式法则：
+
+$$\begin{align*}
+\frac{\partial L}{\partial w} &= \frac{\partial L}{\partial y}\cdot\frac{\partial y}{\partial w} \\
+\frac{\partial L}{\partial b} &= \frac{\partial L}{\partial y}\cdot\frac{\partial y}{\partial b}
+\end{align*}$$
+
+分项导数：
+$$\frac{\partial L}{\partial y}=y-y_{gt},\quad
+\frac{\partial y}{\partial w}=x,\quad
+\frac{\partial y}{\partial b}=1$$
+
+#### 代入数值演算
+已知：
+$x=1.5,\ w=0.8,\ b=0.2,\ y_{gt}=0.8,\ \varepsilon=0.1$
+
+**正向传播**
+$$y = wx + b = 0.8\times1.5 + 0.2 = 1.4$$
+
+**反向传播求梯度**
+$$\frac{\partial L}{\partial y}=y-y_{gt}=1.4-0.8=0.6$$
+$$\frac{\partial L}{\partial w}=0.6 \times x = 0.6\times1.5=0.9$$
+$$\frac{\partial L}{\partial b}=0.6 \times 1 = 0.6$$
+
+**梯度下降更新参数**
+
+$$\begin{align*}
+w_{new} &= w - \varepsilon\cdot\frac{\partial L}{\partial w}=0.8 - 0.1\times0.9=0.71 \\
+b_{new} &= b - \varepsilon\cdot\frac{\partial L}{\partial b}=0.2 - 0.1\times0.6=0.14
+\end{align*}$$
+
+更新后预测与损失：
+$$y_{new}=0.71\times1.5+0.14=1.205$$
+$$L_{new}=\frac12(1.205-0.8)^2\approx0.082$$
+
+> 💡 反向传播总结
+> 1. 前向：算预测、算损失；
+> 2. 反向：从损失出发，利用链式法则回传梯度；
+> 3. 更新：参数沿着梯度反方向移动，不断减小损失。
