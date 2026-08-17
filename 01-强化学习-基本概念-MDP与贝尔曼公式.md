@@ -333,6 +333,38 @@ state value 本质就是对"状态"的评估：站在s这个位置，按照当�
 - 奖励=走这条路需要花费时间（时间越短越好）
 - 路口价值：从这个路口到终点，最快要多久
 
+
+## 贝尔曼最优公式
+
+### optimal policy
+
+a policy Π* is optimal if v<sub>Π*</sub>(s) >=v<sub>Π</sub>(s)  for all s and for any other policy Π
+
+
+## Bellman最优方程
+标量形式
+
+```math
+v_{\ast}(s) = \max_{\pi}\sum_{a}\pi(a|s)\left(
+\sum_{r}p(r|s,a)r
++\gamma\sum_{s'}p(s'|s,a)v_{\ast}(s')
+\right)
+```
+
+```math
+v_{\ast}(s) = \max_{\pi}\sum_{a}\pi(a|s)\;q_{\ast}(s,a)
+```
+
+
+矩阵向量形式
+
+$$\boldsymbol{v}_{*} = \max_{\pi}\big(\boldsymbol{r}_{\pi} + \gamma P_{\pi}\boldsymbol{v}_{*}\big)$$
+
+$$\begin{aligned}
+\big[\boldsymbol{r}_{\pi}\big]_{s} &\triangleq \sum_{a}\pi(a|s)\sum_{r}p(r|s,a)r \\
+\big[P_{\pi}\big]_{s,s'} &\triangleq \sum_{a}\pi(a|s)p(s'|s,a)
+\end{aligned}$$
+
 ---
 
 下一节:[02 反向传播](02-反向传播.md) ｜ 返回:[目录](README.md)
