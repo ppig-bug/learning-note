@@ -123,13 +123,11 @@ $$
 | `d_model` | model dim | 模型维度 | 每个 token 的总向量长度 | 64 |
 
 做H组独立的注意力机制
-
 $$
 \mathrm{head}_i = \mathrm{Attention}\left(QW_i^{Q},\; KW_i^{K},\; VW_i^{V}\right)
 $$
 
 接线并且线性融合回模型维度
-
 $$
 \mathrm{MultiHead}(Q,K,V) = \mathrm{Concat}(\mathrm{head}_1, \dots, \mathrm{head}_h)\,W^{O}
 $$
@@ -137,6 +135,15 @@ $$
 ### 掩码注意力机制 Masked Multi-head-attention
 1. 为什么需要填充：在处理批次时，Transformer的输入要求**同一个batch**中所有句子长度一致，以便可以在GPU上并行计算
 2. 做注意力时把"不该看的位置"的分数压成 −∞，softmax 之后这些位置权重约等于 0，等于物理上看不见。
+
+### 交叉注意力机制
+
+| 对比项 | 自注意力 | 交叉注意力 |
+| --- | --- | --- |
+| Q 来自 | 解码器自己 | 解码器自己（我要找什么） |
+| K / V 来自 | 解码器自己 | 编码器的 memory（原文有什么） |
+| 分数矩阵形状 | `[n, n]` 方阵 | `[n_tgt, n_src]` 矩形 |
+| 需要哪种 mask | causal + padding | 只要 padding（没有"未来"） |
 
 ### 层归一化 Norm
 
@@ -185,3 +192,30 @@ $$
 1. 解码器生成机制规则：只能看到自己和前面的 token
 2. 怎么做到这种效果：**mask** 计算注意力分数的时候，直接把后面的分数转换成一个极小的数，经过 softmax 权重几乎为 0，就看不到后面的 token 了
 3. 解码器怎么知道原文在说什么：解码器一边解码一边回看编码器，拿自己的 Q 去查询编码器输出的 k 和 v
+
+## Transformer推理和训练过程
+
+### 推理过程：简单来说就是编码器跑一次，解码器吐出一个字
+
+### 训练过程： 简单来说就是抄答案改错，token进行逐个对比，反向传播更新权重
+
+#### 训练过程文字描述
+1. 分词→ 加 <BOS> → 补 <PAD>
+2. Encoder:原句整句并行算一遍，输出memory[B,n_src,d_model]
+3. Decoder:目标句子右移一位喂进去，每个位置都是看着左边去猜自己
+4. 损失:???输出过nn.Linear(d_model,vocab_size)得到logits,逐 token 交叉熵？？？？,<PAD>用ignore_index跳过
+5. 反向：梯度裁剪+Adam学习率
+
+#### 代码实现
+```
+model.train()
+for src,tgt in loader:
+   logits=model(src,tgt[:,:-1])  #右移输入
+   loss=F.cross_entropy(logits.reshape(-1, V), tgt[:, 1:].reshape(-1),
+                           ignore_index=PAD, label_smoothing=0.1)
+   loss.backward()
+   clip_grad_norm_(model.parameters(), 1.0)
+   opt.step();
+   opt.zero_grad()
+
+```
