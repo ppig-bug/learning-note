@@ -63,3 +63,56 @@ class MultiHeadAttention(nn.Module):
         out=self.dropout(out)
         #残差连接+layernorm
         return self.norm(out+q),attn #返回输出和注意力权重
+
+class FeedForward(nn.Module):
+    def __init__(self,d_model,d_ff,dropout=0.1):
+        super().__init__()
+        self.fc1=nn.Linear(d_model,d_ff) #输入维度为d_model,输出为d_ff ,为了让模型学到一个更丰富的特征
+        self.fc2=nn.Linear(d_ff,d_model) #保证第二个线性层输出维度等于第一个线性层的输入维度，为了后续残差链接
+        self.dropout=nn.Dropout(dropout)
+        self.norm=nn.LayerNorm(d_model) #对最后一个维度进行归一化
+
+    def forward(self,x):
+        out=self.fc2(self.dropout(torch.relu(self.fc1(x)))) #先经过第一个线性层，再经过relu,在经过dropout,再经过第二个线性层
+        return self.norm(out+x) #先经过残差连接，再经过归一化
+
+class EncoderLayer(nn.Module):
+    def __init__(self,d_model,n_heads,d_ff,dropout=0.1):
+        super().__init__()
+        # 多头注意力机制 输入为src，实现训练内部的信息交互，每个token都可以看到序列中其他的token，从而学习上下文信息
+        self.self_attn=MultiHeadAttention(d_model,n_heads,dropout)
+        #对每个位置向量独立进行非线性变换，可以提升模型表达能力
+        self.ffn=FeedForward(d_model,d_ff,dropout)
+
+    def forward(self,src,src_mask=None):
+        # src 输入序列张量，形状batch,seq_len,d_model
+        #src_mask 屏蔽padding的位置，避免模型关注无效的token
+        out,_=self.self_attn(src,src,src,src_mask)
+        # 经过前馈神经网络，每个位置的token都会单独通过两层线性层映射和激活函数，来提升模型的表达能力
+        out=self.ffn(out)
+        return out
+
+class DecoderLayer(nn.Module):
+     def __init__(self,d_model,n_heads,d_ff,dropout=0.1):
+            super().__init__()
+            #Mask多头注意力机制
+            # 输入tgt(目标序列) 在翻译任务中 已经生成的前几个单词
+            # 计算目标序列内部的自注意力，通过mask挡住未来的token
+            self.self_attn=MultiHeadAttention(d_model,n_heads,dropout)
+            #交叉注意力，和encoder做交互
+            #输入Q=当前解码器的输出，K=V=来自编码器的memory
+            #目的：将目标序列与原序列对齐
+            self.cross_attn=MultiHeadAttention(d_model,n_heads,dropout)
+            self.ffn=FeedForward(d_model,d_ff,dropout)
+
+     def forward(self,tgt,memory,tgt_mask=None,memory_mask=None):
+            #tgt目标序列 memory:编码器的输出（原序列的表示）
+            #tgt_mask,屏蔽未来的token
+            out,_=self.self_attn(tgt,tgt,tgt,tgt_mask)
+            #与原序列进行交互，Q解码器当前的输出out,K=V=memory
+            out,_=self.cross_attn(out,memory,memory,memory_mask)
+            out=self.ffn(out)
+            return out
+
+
+
