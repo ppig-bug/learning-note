@@ -1,4 +1,3 @@
-#持续更新中
 import torch
 import torch.nn as nn
 import math
@@ -8,7 +7,7 @@ class SelfAttention(nn.Module):
     def __init__(self,dropout=0.1):
         super().__init__()
         self.dropout=nn.Dropout(dropout) #对10%的神经元做一个神经失活，防止过拟合
-        self.softmax=nn.SoftMax(dim=-1) #将得分转化成概率分布，在最后一个维度进行
+        self.softmax=nn.Softmax(dim=-1) #将得分转化成概率分布，在最后一个维度进行
 
     def forward(self,Q,K,V,mask=None):
         #X:batch,seq_len,d_model 一次送到模型的个数；序列长度即一个样本中的token数量；embedding向量的维度
@@ -58,7 +57,7 @@ class MultiHeadAttention(nn.Module):
         #计算注意力
         out,attn = self.attention(Q,K,V,mask) #attn为注意力权重，out为注意力加权后的值
         #contiguous目的：让tensor在内存里面存储，避免view的时候产生报错
-        out=out.tranpose(1,2).contiguous().view(batch_size,-1.self.n_heads*self.d_k)
+        out=out.transpose(1,2).contiguous().view(batch_size,-1,self.n_heads*self.d_k)
         out=self.fc(out) #让输入和输出一致，方便残差连接
         out=self.dropout(out)
         #残差连接+layernorm
@@ -92,6 +91,37 @@ class EncoderLayer(nn.Module):
         out=self.ffn(out)
         return out
 
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=5000, dropout=0.1):
+        super().__init__()
+        self.dropout = nn.Dropout(dropout)
+        pe = torch.zeros(max_len, d_model)
+        pos = torch.arange(0, max_len).unsqueeze(1).float()
+        div = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(pos * div)
+        pe[:, 1::2] = torch.cos(pos * div)
+        self.register_buffer("pe", pe.unsqueeze(0))   # 形状 [1, max_len, d_model]，不参与训练
+
+    def forward(self, x):
+        return self.dropout(x + self.pe[:, :x.size(1)])   # 只取和输入一样长的那一段
+
+class Encoder(nn.Module):
+    def __init__(self, vocab_size, d_model, n_heads, num_layers, d_ff, dropout, max_len):
+        super().__init__()
+        self.d_model    = d_model
+        self.embedding  = nn.Embedding(vocab_size, d_model)      # token id → 向量
+        self.pos        = PositionalEncoding(d_model, max_len, dropout)
+        self.layers     = nn.ModuleList(                         # 堆 num_layers 层
+            [EncoderLayer(d_model, n_heads, d_ff, dropout) for _ in range(num_layers)]
+        )
+
+    def forward(self, src, src_mask=None):
+        x = self.embedding(src) * math.sqrt(self.d_model)   # 乘 sqrt(d_model) 是原论文的做法
+        x = self.pos(x)
+        for layer in self.layers:
+            x = layer(x, src_mask)
+        return x
+
 class DecoderLayer(nn.Module):
      def __init__(self,d_model,n_heads,d_ff,dropout=0.1):
             super().__init__()
@@ -114,5 +144,66 @@ class DecoderLayer(nn.Module):
             out=self.ffn(out)
             return out
 
+class Decoder(nn.Module):
+    def __init__(self, vocab_size, d_model, n_heads, num_layers, d_ff, dropout, max_len):
+        super().__init__()
+        self.d_model   = d_model
+        self.embedding = nn.Embedding(vocab_size, d_model)
+        self.pos       = PositionalEncoding(d_model, max_len, dropout)
+        self.layers    = nn.ModuleList(
+            [DecoderLayer(d_model, n_heads, d_ff, dropout) for _ in range(num_layers)]
+        )
+
+    def forward(self, tgt, memory, tgt_mask=None, memory_mask=None):
+        x = self.embedding(tgt) * math.sqrt(self.d_model)
+        x = self.pos(x)
+        for layer in self.layers:
+            x = layer(x, memory, tgt_mask, memory_mask)
+        return x
 
 
+class Transformer(nn.Module):
+    def __init__(self,
+                 src_vocab,#原语言词表的大小
+                 tgt_vocab,#目标语言词表大小
+                 d_model=512,#embedding向量的维度
+                 n_heads=8,#多头注意力的头数
+                 num_encoder_layers=6, #编码器的层数
+                 num_decoder_layers=6,#解码器的层数
+                 d_ff=2048, #FFN隐藏层维度
+                 dropout=0.1,#丢弃比例
+                 max_len=5000): #最大序列的长度
+        super().__init__()
+
+        self.encoder= Encoder(
+            src_vocab,d_model,n_heads,num_encoder_layers,d_ff,dropout,max_len
+        )
+
+        self.decoder = Decoder(tgt_vocab, d_model, n_heads, num_decoder_layers, d_ff, dropout, max_len)
+        self.fc_out  = nn.Linear(d_model, tgt_vocab) 
+
+    def forward(self,src,tgt,src_mask=None,tgt_mask=None,memory_mask=None):
+        # 编码器前向传播
+        memory=self.encoder(src,src_mask)
+        # 解码器前向传播
+        out=self.decoder(tgt,memory,tgt_mask,memory_mask)
+        # 返回transformer输出batch，seq_len_tgt,tgt_vocab
+        return self.fc_out(out)
+
+def generate_mask(size):#size是序列长度
+    # torch.triu(torch.ones(size,size),diagonal=1) 会生成上三角，不含对角线
+    mask=torch.triu(torch.ones(size,size),diagonal=1).bool()
+    # 这样做是为了明确生成了上三角（需要屏蔽的位置），然后通过mask==0得到可见的部分
+    return mask==0 #True可见，False屏蔽
+
+src_vocab=10000
+tgt_vocab=10000
+# 初始化模型
+model=Transformer(src_vocab,tgt_vocab)
+src=torch.randint(0,src_vocab,(32,10)) #原序列batch=32,src_len=10 每个元素是token ID
+# tgt.size(1) 取目标序列长度
+tgt = torch.randint(0, tgt_vocab, (32, 8))
+tgt_mask=generate_mask(tgt.size(1)).to(tgt.device)
+out=model(src,tgt,tgt_mask=tgt_mask) #前向传播
+# 每个目标token 对应词表中每个词的预测概率
+print(out.shape) #batch,tgt_len,tgt_vocab
