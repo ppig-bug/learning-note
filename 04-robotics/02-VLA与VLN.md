@@ -1,5 +1,6 @@
 ## VLA 与 VLN 总结
 
+
 ### VLN：视觉语言导航（Vision-and-Language Navigation）
 
 - **是什么**：一个"任务"——根据自然语言指令 + 环境视觉输入，控制机器人走到目标位置
