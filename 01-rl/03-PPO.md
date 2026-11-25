@@ -1,5 +1,6 @@
 ## REINFORCE 策略梯度推导
 
+
 % 1. 目标期望
 
 $$J(\theta)=\mathbb{E}_{\tau\sim P_\theta(\tau)}[R(\tau)]=\sum_{\tau} R(\tau)P_\theta(\tau)$$
