@@ -5,6 +5,7 @@
             更新公式：(α代表学习率)
 $$Q(s,a) \leftarrow Q(s,a) + \alpha \big(R(s,a) + \gamma \max_{a'} Q(s',a') - Q(s,a)\big)$$
 
+
 Q-learning的步骤：
 - 初始化Q表 初始化全为0
     >一开始智能体完全没有经验，对所有动作的好坏一无所知
