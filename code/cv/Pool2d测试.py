@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+
 #1.手写最大池化
 def max_pool2d_numpy(x,k=2,stride=None):#x就是numpy数组[H,W],一般默认步长等于k
     if stride is None:
